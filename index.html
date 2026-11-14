@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="規劃雲林交通與一日遊，優先搜尋周邊 2 公里餐廳，店家不足十家時自動延伸至 5 公里。">
+  <meta name="google-maps-browser-key" content="">
+  <title>雲林縣旅遊網｜交通規劃與美食雷達</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./destinations.js" defer></script>
+  <script src="./restaurants.js" defer></script>
+  <script src="./itinerary.js" defer></script>
+  <script src="./google-ratings.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-width header-inner">
+      <h1><a href="#top">雲林縣旅遊網</a></h1>
+      <nav aria-label="關卡導覽">
+        <a href="#level-0">交通規劃</a>
+        <a href="#level-1">美食雷達</a>
+        <a href="#level-2">行程規劃</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-width" id="top">
+    <section id="level-0" aria-labelledby="transport-title">
+      <div class="level-tag"><span class="pixel">LEVEL 0</span> 交通規劃</div>
+      <h2 id="transport-title">規劃你的雲林旅程</h2>
+      <p class="section-copy">輸入出發地址、地標或車站，選擇要去的雲林目的地。</p>
+
+      <form id="trip-form" class="rpg-box trip-form">
+        <div class="form-field">
+          <label for="origin">出發地</label>
+          <input id="origin" name="origin" list="origin-options" maxlength="120" placeholder="例如：臺北車站、臺中轉運中心" required>
+          <datalist id="origin-options">
+            <option value="臺北車站"></option>
+            <option value="臺中轉運中心"></option>
+            <option value="高鐵臺中站"></option>
+            <option value="臺鐵嘉義站"></option>
+            <option value="斗六火車站"></option>
+            <option value="高鐵雲林站"></option>
+          </datalist>
+        </div>
+        <div class="form-field">
+          <label for="destination">雲林目的地</label>
+          <select id="destination" name="destination" required></select>
+        </div>
+        <button class="rpg-btn primary-button" type="submit">查詢交通路線 <span aria-hidden="true">→</span></button>
+      </form>
+      <p id="trip-status" class="sr-only" role="status"></p>
+
+      <div id="route-results" class="route-results" hidden>
+        <div class="results-heading">
+          <div>
+            <h3 id="route-summary" tabindex="-1"></h3>
+            <p class="muted">以下是轉乘參考。當日班次與票價請查各業者公告。</p>
+          </div>
+          <a id="transit-link" class="rpg-btn secondary-button" target="_blank" rel="noopener noreferrer">Google Maps 完整大眾運輸路線 ↗</a>
+        </div>
+        <div id="transport-options" class="transport-grid"></div>
+      </div>
+    </section>
+
+    <section id="level-1" aria-labelledby="radar-title">
+      <div class="radar-grid">
+        <div class="radar-intro">
+          <div class="level-tag"><span aria-hidden="true">📍</span> <span class="pixel">LEVEL 1</span> <span id="radar-destination"></span></div>
+          <h2 id="radar-title">美食搜尋雷達</h2>
+          <p class="section-copy">以<strong id="radar-center"></strong>為中心，找出直線距離 <span id="radar-radius-desc">2 公里</span>內的店家。選擇料理類型，或瀏覽所有店家。</p>
+          <div id="restaurant-categories" class="category-grid" role="group" aria-label="餐廳分類">
+            <button type="button" class="rpg-btn category-button" data-category="brunch" aria-pressed="false"><span aria-hidden="true">🍳</span>早午餐</button>
+            <button type="button" class="rpg-btn category-button" data-category="cafe" aria-pressed="false"><span aria-hidden="true">☕</span>咖啡廳</button>
+            <button type="button" class="rpg-btn category-button" data-category="japanese" aria-pressed="false"><span aria-hidden="true">🍱</span>日式料理</button>
+            <button type="button" class="rpg-btn category-button" data-category="korean" aria-pressed="false"><span aria-hidden="true">🥢</span>韓式料理</button>
+          </div>
+        </div>
+
+        <div class="rpg-box mini-map">
+          <div class="map-heading"><span class="pixel">RADAR MINI-MAP</span><span id="map-target" class="map-target"></span></div>
+          <div class="map-frame">
+            <iframe id="google-map" title="目的地周邊地圖" loading="lazy" referrerpolicy="no-referrer"></iframe>
+            <span id="map-caption" class="map-caption">餐廳篩選範圍 2 公里</span>
+          </div>
+          <div class="map-footer">
+            <span id="map-center"></span>
+            <a id="external-map" target="_blank" rel="noopener noreferrer">放大開啟 Google Maps ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="restaurant-toolbar">
+        <div class="restaurant-filters">
+          <span id="batch-tag" class="batch-tag" role="status"></span>
+          <span id="results-center" class="results-center"></span>
+          <button id="all-restaurants" type="button" class="all-restaurants" aria-pressed="true">全部店家</button>
+        </div>
+        <button id="next-batch" type="button" class="rpg-btn shuffle-button" disabled><span aria-hidden="true">🎲</span> 重新尋找（下一批）</button>
+      </div>
+
+      <div id="restaurant-cards" class="restaurant-grid"></div>
+      <p id="restaurant-empty" class="rpg-box empty-state" hidden></p>
+
+      <div id="restaurant-selection" class="rpg-box selection" hidden>
+        <div>
+          <p class="selection-label">✓ 已選擇店家</p>
+          <h3 id="selected-name" tabindex="-1"></h3>
+          <p id="selected-details" class="muted"></p>
+        </div>
+        <a id="walking-link" class="rpg-btn secondary-button" target="_blank" rel="noopener noreferrer">開啟步行導航 ↗</a>
+      </div>
+      <p class="data-note">店家與營業資訊來自<a href="https://data.gov.tw/dataset/171666" target="_blank" rel="noopener noreferrer">雲林縣政府餐飲開放資料</a><span id="restaurant-date"></span>。實際營業情況以店家公告為準。</p>
+    </section>
+
+    <section id="level-2" aria-labelledby="itinerary-title">
+      <div class="level-tag"><span class="pixel">LEVEL 2</span> 行程規劃</div>
+      <h2 id="itinerary-title">雲林冒險旅程：行程安排師</h2>
+      <p class="section-copy">串連交通起迄點、精選景點與美食雷達推薦，自由打造或一鍵套用你的雲林一日遊！</p>
+
+      <div class="plan-tabs-bar" role="tablist" aria-label="行程規劃方案">
+        <button type="button" id="tab-plan-custom" class="plan-tab-btn active" role="tab" aria-selected="true" aria-controls="panel-plan-custom">
+          ✏️ 方案 A：已有想法（自由安排行程）
+        </button>
+        <button type="button" id="tab-plan-recommend" class="plan-tab-btn" role="tab" aria-selected="false" aria-controls="panel-plan-recommend">
+          ✨ 方案 B：還沒有想法（智能推薦行程）
+        </button>
+      </div>
+
+      <!-- 方案 A：自由安排行程 -->
+      <div id="panel-plan-custom" class="plan-panel" role="tabpanel" aria-labelledby="tab-plan-custom">
+        <div class="rpg-box plan-box">
+          <div class="plan-header">
+            <h3>✏️ 自訂冒險時間線與推薦庫</h3>
+            <p class="plan-hint">左側調整行程與時間，右側挑選景點及周邊美食。優先搜尋 2 公里，符合分類的店家不足十家時延伸至 5 公里。</p>
+          </div>
+
+          <div class="plan-split-layout">
+            <!-- 左欄：時間線流程 -->
+            <div class="timeline-column">
+              <div class="column-header">
+                <h4>🚩 冒險時間線（<span id="itinerary-count">1</span> 站）</h4>
+                <button type="button" id="btn-reset-itinerary" class="btn-text-danger" title="重設為預設起點">重設為起點</button>
+              </div>
+
+              <!-- 時間線列表 -->
+              <div class="timeline-wrapper">
+                <ol id="itinerary-list" class="timeline-list" aria-label="時間線順序列表"></ol>
+              </div>
+
+              <!-- 下一步智慧建議引導 -->
+              <div id="timeline-next-suggestion" class="timeline-next-box">
+                <div class="suggestion-icon" aria-hidden="true">💡</div>
+                <div class="suggestion-body">
+                  <div id="suggestion-text" class="suggestion-text">逛完景點肚子餓了嗎？推薦安排美味餐點：</div>
+                  <button type="button" id="btn-suggestion-action" class="rpg-btn btn-suggestion">
+                    👉 前往右側挑選「🍜 推薦美食」
+                  </button>
+                </div>
+              </div>
+
+              <!-- Google Maps 多點導航按鈕 -->
+              <div class="itinerary-footer-actions">
+                <a id="btn-open-google-route" class="rpg-btn btn-route-map" target="_blank" rel="noopener noreferrer">
+                  🗺️ 在 Google Maps 開啟完整行程多點導航 ↗
+                </a>
+                <span class="route-hint">依清單順序開啟開車導航；待選餐廳會略過，尚未定位的地點由 Google Maps 搜尋，請核對位置。</span>
+              </div>
+            </div>
+
+            <!-- 右欄：圖標分景點與美食 -->
+            <div class="picker-column">
+              <!-- 圖標分類切換 Tab -->
+              <div class="picker-tabs" role="tablist" aria-label="加入資源類型">
+                <button type="button" id="tab-pick-spot" class="picker-tab-btn active" role="tab" aria-selected="true" aria-controls="picker-panel-spot">
+                  <span class="tab-icon">🏛️</span> 景點與私房店家（支援地址搜尋）
+                </button>
+                <button type="button" id="tab-pick-food" class="picker-tab-btn" role="tab" aria-selected="false" aria-controls="picker-panel-food">
+                  <span class="tab-icon">🍜</span> 推薦美食 (Level 1 雷達)
+                </button>
+              </div>
+
+              <!-- 景點與私房店家面板（支援店名與地址搜尋） -->
+              <div id="picker-panel-spot" class="picker-panel" role="tabpanel" aria-labelledby="tab-pick-spot">
+                <!-- 手動輸入景點、按摩店、店家或地址 -->
+                <form id="add-stop-form" class="add-stop-form">
+                  <div class="add-stop-input-wrap">
+                    <label for="custom-stop-input" class="visually-hidden">景點、店家或地址</label>
+                    <input id="custom-stop-input" type="text" maxlength="100" placeholder="輸入景點、按摩店、店家名稱或地址（例如：斗六市中正路…）" required>
+                  </div>
+                  <button type="submit" class="rpg-btn btn-add-stop">＋ 加入時間線</button>
+                </form>
+
+                <p class="plan-hint">自訂地點會與本站資料核對；無法確認座標時標示「尚未定位」，暫停該地點的附近美食推薦。</p>
+
+                <!-- Google Maps 店家與地址搜尋核對卡片 -->
+                <div id="loc-preview-box" class="loc-preview-box" hidden>
+                  <div class="loc-preview-header">
+                    <span class="loc-preview-badge">🗺️ Google Maps 位置核對</span>
+                    <span id="loc-preview-name" class="loc-preview-target"></span>
+                  </div>
+                  <div class="loc-preview-actions">
+                    <a id="btn-maps-search-external" class="rpg-btn btn-sm btn-maps-link" target="_blank" rel="noopener noreferrer">
+                      🔍 在 Google Maps 查看此店家/地址 ↗
+                    </a>
+                    <button type="button" id="btn-toggle-map-preview" class="rpg-btn btn-sm secondary-button">
+                      🗺️ 展開地圖預覽
+                    </button>
+                    <button type="button" id="btn-confirm-add-location" class="rpg-btn btn-sm">
+                      ＋ 加入時間線
+                    </button>
+                  </div>
+                  <div id="loc-inline-map-frame" class="loc-inline-map" hidden>
+                    <iframe id="loc-preview-iframe" title="Google Maps 地點預覽" loading="lazy"></iframe>
+                  </div>
+                </div>
+
+                <div class="picker-section-title">
+                  <span>💡 當地熱門景點推薦（點擊加入）：</span>
+                </div>
+                <div id="inspiration-spots-list" class="spots-picker-grid"></div>
+              </div>
+
+              <!-- 美食面板（連動景點與 Level 1 美食雷達） -->
+              <div id="picker-panel-food" class="picker-panel" role="tabpanel" aria-labelledby="tab-pick-food" hidden>
+                <!-- 搜尋與手動新增餐廳 -->
+                <form id="add-food-form" class="add-stop-form">
+                  <div class="add-stop-input-wrap">
+                    <label for="custom-food-input" class="visually-hidden">搜尋或自訂餐廳名稱</label>
+                    <input id="custom-food-input" type="text" maxlength="80" placeholder="🔍 搜尋餐廳，或直接輸入私房店家名稱…">
+                  </div>
+                  <button type="submit" class="rpg-btn btn-add-stop">＋ 加入時間線</button>
+                </form>
+
+                <!-- 若在 Level 1 選過餐廳的置頂提示 -->
+                <div id="selected-restaurant-banner" class="selected-restaurant-banner" hidden>
+                  <div class="banner-content">
+                    <span class="banner-badge">⭐ Level 1 已選中</span>
+                    <span id="banner-restaurant-name" class="banner-text">店名</span>
+                  </div>
+                  <button type="button" id="btn-add-selected-restaurant" class="rpg-btn btn-sm">＋ 加入時間線</button>
+                </div>
+
+                <!-- 景點搜尋中心切換 -->
+                <div class="food-anchor-bar">
+                  <label for="food-anchor-select" class="anchor-label">📍 美食搜尋中心：</label>
+                  <select id="food-anchor-select" class="food-anchor-select" title="選擇美食搜尋中心；2 公里內符合分類的店家不足十家時延伸至 5 公里"></select>
+                </div>
+
+                <!-- 類別篩選按鈕 -->
+                <div class="food-category-bar">
+                  <span class="category-label">篩選：</span>
+                  <div id="food-filter-buttons" class="food-filter-buttons">
+                    <button type="button" class="food-filter-btn active" data-food-category="all">全部美食</button>
+                    <button type="button" class="food-filter-btn" data-food-category="brunch">早午餐</button>
+                    <button type="button" class="food-filter-btn" data-food-category="cafe">咖啡廳</button>
+                    <button type="button" class="food-filter-btn" data-food-category="japanese">日式</button>
+                  </div>
+                </div>
+
+                <div class="picker-section-title">
+                  <span>📍 <span id="food-picker-center">斗六火車站</span> · <span id="food-picker-radius-label">2 公里內推薦美食</span></span>
+                </div>
+                <p id="food-location-status" class="location-status" role="status" hidden></p>
+                <div id="picker-restaurants-list" class="restaurants-picker-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 方案 B：智能推薦行程 -->
+      <div id="panel-plan-recommend" class="plan-panel" role="tabpanel" aria-labelledby="tab-plan-recommend" hidden>
+        <div class="rpg-box plan-box">
+          <div class="plan-header">
+            <h3>✨ <span id="recommend-town-name">斗六</span> 在地精選推薦行程</h3>
+            <p class="plan-hint">依據您在 Level 0 選擇的抵達地標，自動為您規劃在地必遊景點與代表性美食的一日遊行程！可以直接套用到自訂清單隨意調整！</p>
+          </div>
+
+          <div id="recommended-tours-container" class="recommended-tours-grid"></div>
+        </div>
+      </div>
+
+      <!-- Level 2 底部：Finish 完成按鈕與行程統整 (支援彩帶特效與傳給同伴) -->
+      <div class="level2-finish-section">
+        <div class="finish-btn-wrap">
+          <button type="button" id="btn-finish-itinerary" class="rpg-btn btn-finish-quest">
+            <span class="finish-sparkle" aria-hidden="true">🎉</span>
+            <span class="pixel">FINISH！</span> 完成行程規劃
+            <span class="finish-sparkle" aria-hidden="true">✨</span>
+          </button>
+        </div>
+
+        <!-- 噴彩帶全螢幕畫布 -->
+        <canvas id="confetti-canvas" class="confetti-canvas" aria-hidden="true"></canvas>
+
+        <!-- 行程統整展示卡片 -->
+        <div id="itinerary-summary-card" class="rpg-box itinerary-summary-card" hidden>
+          <div class="summary-card-header">
+            <div class="summary-title-wrap">
+              <span class="summary-tag">📜 冒險任務達成 · 行程統整表</span>
+              <h3 id="summary-main-title">雲林專屬冒險行程</h3>
+              <p id="summary-sub-info" class="muted"></p>
+            </div>
+            <button type="button" id="btn-close-summary" class="btn-ctrl" title="收起統整清單" aria-label="收起統整清單">✕</button>
+          </div>
+
+          <!-- 統整時間線簡潔清單 -->
+          <div class="summary-timeline-wrap">
+            <ol id="summary-stops-list" class="summary-stops-list"></ol>
+          </div>
+
+          <!-- 傳給同伴與分享操作 -->
+          <div class="summary-share-actions">
+            <button type="button" id="btn-copy-itinerary" class="rpg-btn btn-share-copy">
+              📋 複製行程文字（傳給朋友同伴）
+            </button>
+            <a id="btn-summary-maps" class="rpg-btn btn-share-maps" target="_blank" rel="noopener noreferrer">
+              🗺️ 開啟 Google Maps 多點導航 ↗
+            </a>
+          </div>
+
+          <!-- 複製成功提示文字 -->
+          <div id="copy-toast-msg" class="copy-toast-msg" hidden>
+            ✓ 行程文字已複製到剪貼簿！可直接貼在對話框傳給好友同伴囉！
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-width">
+      <span>雲林縣旅遊網</span>
+      <nav aria-label="網站資訊">
+        <a href="./site-info.html">使用條款與隱私</a>
+        <a href="https://tour.yunlin.gov.tw/" target="_blank" rel="noopener noreferrer">慢遊雲林官方旅遊網 ↗</a>
+      </nav>
+    </div>
+  </footer>
+
+  <template id="restaurant-template">
+    <article class="rpg-box restaurant-card">
+      <div>
+        <div class="restaurant-image">
+          <span class="image-fallback" aria-hidden="true">🍽️</span>
+          <img alt="" loading="lazy" decoding="async" hidden>
+          <span class="restaurant-type"></span>
+          <span class="restaurant-hours"></span>
+        </div>
+        <h3 class="restaurant-name"></h3>
+        <div class="restaurant-rating">
+          <a class="rating-link" target="_blank" rel="noopener noreferrer">
+            <span class="rating-star" aria-hidden="true">★</span>
+            <span class="rating-fallback">到 Google Maps 看評分 ↗</span>
+            <span class="rating-value" hidden>
+              <span class="rating-score"></span>
+              <span class="rating-count" hidden></span>
+              <span class="rating-source" translate="no">Google Maps</span>
+            </span>
+          </a>
+          <span class="rating-status" role="status" hidden></span>
+          <span class="rating-providers" hidden></span>
+        </div>
+        <p class="restaurant-distance"></p>
+        <p class="restaurant-address"></p>
+        <p class="restaurant-description"></p>
+      </div>
+      <div class="card-actions">
+        <button type="button" class="rpg-btn choose-button">✓ 選擇這家店！</button>
+        <a class="rpg-btn restaurant-map" target="_blank" rel="noopener noreferrer">🗺️ 開啟 Google Maps 店家資訊</a>
+      </div>
+    </article>
+  </template>
+</body>
+</html>
