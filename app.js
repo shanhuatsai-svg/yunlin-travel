@@ -164,6 +164,7 @@ function restaurantCard(result) {
   const hours = card.querySelector('.restaurant-hours');
   hours.textContent = item.hours ? `◷ ${item.hours}` : '◷ 營業時間請洽店家';
   hours.title = item.hours;
+  card.querySelector('.restaurant-name').textContent = item.name;
   const distLabel = distanceLabel(distance);
   const distText = (isCurrentDestinationExtended && distance > defaultRadiusMeters)
     ? `↗ 距目的地 ${distLabel}（5km 延伸）`
