@@ -34,15 +34,12 @@
 4. 新增頁面使用小寫英文及連字號，例如 `douliu-guide.html`，放在根目錄。腳本放 `scripts/`，回歸測試放 `tests/`。不要把產生的單檔預覽當作主要原始碼修改。
 5. 修改功能時，同步更新本檔、README、繳交稿及相關介面文字；新增重要資料處理規則時補上對應回歸測試。
 
-在專案根目錄執行：
+一般瀏覽直接開啟 `index.html` 即可，網站本身不需要安裝 npm 套件。
+修改原始檔後，在專案根目錄執行以下指令驗證與更新：
 
-```text
-node --test tests/itinerary.test.cjs
-python scripts/build-local-preview.py
-python -m http.server 8000 --bind 127.0.0.1
-```
-
-前兩個指令分別執行回歸測試、更新上一層的 `雲林旅遊網-本機預覽.html`；第三個指令提供本機 HTTP 預覽。網站本身不需要安裝 npm 套件。
+- `node --test tests/itinerary.test.cjs`：執行自動回歸測試，驗證行程、時間與 2km/5km 搜尋範圍。
+- `python scripts/build-local-preview.py`：同步更新上一層的單檔預覽 `雲林旅遊網-本機預覽.html`。
+- `python -m http.server 8000 --bind 127.0.0.1`：啟動本機 HTTP 預覽（測試 Google Maps API 星等時使用）。
 
 ## 新增目的地與交通
 
